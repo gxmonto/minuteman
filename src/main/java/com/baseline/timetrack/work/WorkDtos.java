@@ -7,6 +7,7 @@ import com.baseline.timetrack.entity.SyncStatus;
 import com.baseline.timetrack.entity.TimerEntry;
 import com.baseline.timetrack.entity.TimerType;
 import com.baseline.timetrack.entity.WorkDay;
+import com.baseline.timetrack.task.TaskDtos.SiteResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -61,6 +62,8 @@ public final class WorkDtos {
             Long taskId,
             String taskTitle,
             Long siteId,
+            /** Site with its geofence, so the app can watch it while the timer runs. */
+            SiteResponse site,
             Instant startTime,
             Instant endTime,
             Long durationSeconds,
@@ -75,6 +78,7 @@ public final class WorkDtos {
                     t.getTask() == null ? null : t.getTask().getId(),
                     t.getTask() == null ? null : t.getTask().getTitle(),
                     t.getSite() == null ? null : t.getSite().getId(),
+                    SiteResponse.of(t.getSite()),
                     t.getStartTime(),
                     t.getEndTime(),
                     t.getDurationSeconds(),

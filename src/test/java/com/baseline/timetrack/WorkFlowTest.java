@@ -77,7 +77,9 @@ class WorkFlowTest extends ApiTestBase {
                         "{\"type\":\"TASK\",\"taskId\":" + task.getId() + "}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.taskTitle").value("Install router"))
-                .andExpect(jsonPath("$.siteId").value(site.getId()));
+                .andExpect(jsonPath("$.siteId").value(site.getId()))
+                .andExpect(jsonPath("$.site.radiusMeters").value(100))
+                .andExpect(jsonPath("$.site.latitude").value(19.4326));
 
         clock.advance(Duration.ofMinutes(30));
         mvc.perform(auth(get("/api/work/current"), tech.token()))

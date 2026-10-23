@@ -4,6 +4,13 @@ Backend de control de tiempo para técnicos de campo: jornada (clock in/out), ti
 
 Las tareas pueden venir de **cualquier sistema externo** (Bitrix24, un CRM, un ERP, una API propia) y las horas registradas regresan a ese sistema. También se pueden crear tareas directamente en Minuteman.
 
+## Partes
+
+| Carpeta | Qué es |
+|---|---|
+| `/` (Spring Boot) | Backend y API. |
+| [`mobile/`](mobile/README.md) | App de Android/iOS para los técnicos (Expo / React Native). También genera versión web. |
+
 ## Arquitectura
 
 ```
@@ -63,7 +70,7 @@ Todas las rutas (excepto login) llevan `Authorization: Bearer <token>`. Los erro
 |---|---|---|
 | `POST /api/auth/login` | `{email, password}` | Devuelve `accessToken` y `expiresAt`. |
 | `GET /api/me` | | Usuario y cuentas externas vinculadas. |
-| `POST /api/me/devices` | `{token, platform}` | Registra el token FCM (`android`, `ios` o `web`). |
+| `POST /api/me/devices` | `{token, platform}` | Registra el token de push: Expo (`ExponentPushToken[...]`) o FCM. `platform` es `android`, `ios` o `web`. |
 | `DELETE /api/me/devices` | `{token}` | Al cerrar sesión. |
 | `GET /api/tasks` | | Tareas abiertas asignadas, con sitio y geocerca. |
 | `POST /api/tasks/refresh` | | Pide las tareas al sistema externo y devuelve la lista (pull-to-refresh). |
@@ -82,6 +89,8 @@ Todas las rutas (excepto login) llevan `Authorization: Bearer <token>`. Los erro
 2. Cuando el sistema operativo dispara la salida de la geocerca (y, si quieres, cada pocos minutos mientras el timer corre), la app llama `POST /api/work/location`.
 3. El servidor calcula la distancia. Si el técnico está fuera de `radio + max(tolerancia, precisión GPS)`, guarda `leftSiteAt` y envía un push: *"¿Terminaste en X? Saliste del sitio y el timer sigue corriendo"*. No repite el aviso antes de `left-site-repeat-every` (15 min por defecto) y se rearma cuando el técnico vuelve al sitio.
 4. Además, un job del servidor avisa de timers abiertos más de `timer-open-after` (4 h) y jornadas abiertas más de `work-day-open-after` (12 h), aunque el teléfono no haya reportado nada.
+
+Las notificaciones de la app móvil se envían con el servicio de push de Expo (activado por defecto; `EXPO_ACCESS_TOKEN` opcional). Los tokens FCM directos usan `FCM_ENABLED`/`FCM_PROJECT_ID`/`FCM_CREDENTIALS_FILE`.
 
 Los textos de las notificaciones están en `messages.properties` (español) y `messages_en.properties`; el idioma se elige con `APP_LOCALE`.
 
@@ -200,10 +209,10 @@ Detener un timer nunca falla porque el sistema externo esté caído. El registro
 | `timetrack.sites.default-radius-meters` | `150` | Radio para sitios importados sin radio. |
 | `timetrack.integrations.task-sync-interval` | `PT10M` | Pull de tareas. |
 | `timetrack.integrations.max-push-attempts` | `10` | Intentos antes de marcar `FAILED`. |
+| `timetrack.cors.allowed-origins` | vacío | Orígenes de navegador permitidos (solo para la versión web de la app). |
 
 ## Pendiente
 
-- **App móvil** (React Native/Expo o Flutter): consume la API de arriba.
 - Límite de intentos de login (rate limiting) y refresh tokens.
 - Reportes de horas por técnico, tarea y periodo.
 - Si se corren varias instancias del backend, coordinar los jobs programados (por ejemplo con ShedLock).

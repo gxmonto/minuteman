@@ -1,6 +1,7 @@
 package com.baseline.timetrack.config;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,6 +25,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.util.StringUtils;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.baseline.timetrack.auth.UserJwtAuthenticationConverter;
 import com.baseline.timetrack.integration.ApiKeyAuthenticationFilter;
@@ -77,8 +81,10 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    SecurityFilterChain apiFilterChain(HttpSecurity http, UserJwtAuthenticationConverter jwtConverter) throws Exception {
+    SecurityFilterChain apiFilterChain(HttpSecurity http, UserJwtAuthenticationConverter jwtConverter, AppProperties props)
+            throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsSource(props.cors().allowedOrigins())))
             // Stateless bearer-token API without cookies, so CSRF protection does not apply.
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -89,5 +95,18 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)));
         return http.build();
+    }
+
+    /** Only needed for the web build of the app; native apps are not subject to CORS. */
+    private static CorsConfigurationSource corsSource(List<String> allowedOrigins) {
+        var source = new UrlBasedCorsConfigurationSource();
+        if (!allowedOrigins.isEmpty()) {
+            var config = new CorsConfiguration();
+            config.setAllowedOrigins(allowedOrigins);
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+            config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+            source.registerCorsConfiguration("/api/**", config);
+        }
+        return source;
     }
 }

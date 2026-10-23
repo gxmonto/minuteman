@@ -1,6 +1,7 @@
 package com.baseline.timetrack.config;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -15,7 +16,16 @@ public record AppProperties(
         @DefaultValue Sites sites,
         @DefaultValue Push push,
         @DefaultValue Integrations integrations,
+        @DefaultValue Cors cors,
         @DefaultValue("es") Locale locale) {
+
+    /** Browser origins allowed to call the API, e.g. the web build of the mobile app. Empty: none. */
+    public record Cors(List<String> allowedOrigins) {
+
+        public Cors {
+            allowedOrigins = allowedOrigins == null ? List.of() : List.copyOf(allowedOrigins);
+        }
+    }
 
     public record Jwt(
             String secret,
@@ -43,7 +53,14 @@ public record AppProperties(
     public record Sites(@DefaultValue("150") int defaultRadiusMeters) {
     }
 
-    public record Push(@DefaultValue Fcm fcm) {
+    public record Push(@DefaultValue Expo expo, @DefaultValue Fcm fcm) {
+
+        /** Expo push service, used by the mobile app's tokens. */
+        public record Expo(
+                @DefaultValue("true") boolean enabled,
+                /** Optional; required only if "enhanced push security" is on in the Expo project. */
+                String accessToken) {
+        }
 
         public record Fcm(
                 @DefaultValue("false") boolean enabled,

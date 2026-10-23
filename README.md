@@ -27,15 +27,23 @@ Minuteman ──conector──▶ Bitrix24 / HTTP genérico / tu propio Integrat
 
 Requisitos: Java 25 (el `pom.xml` lo pide; el código también compila con 21 usando `-Djava.version=21`) y MySQL 8.
 
+**La primera vez** que arranca, el backend pide en la terminal los datos de MySQL y del primer admin, prueba la conexión y los guarda en `.env` (ignorado por git y legible solo por tu usuario). La clave JWT se genera sola. Las siguientes veces ya no pregunta nada.
+
 ```bash
-cp .env.example .env        # y completa los valores
-set -a; source .env; set +a
-./mvnw spring-boot:run
+./mvnw package -DskipTests
+java -jar target/timetrack-0.0.1-SNAPSHOT.jar            # pregunta la primera vez
+java -jar target/timetrack-0.0.1-SNAPSHOT.jar --setup    # volver a configurar
 ```
 
-Flyway crea el esquema al iniciar (`src/main/resources/db/migration`). **Si ya tenías una base `timetracker` creada por la versión anterior** (con `ddl-auto=update`), usa una base nueva o bórrala: el esquema cambió (fechas en UTC, tareas, sitios con coordenadas, etc.).
+Si lo arrancas desde el IDE o con `./mvnw spring-boot:run` (sin terminal interactiva), corre antes el asistente directo desde el código fuente:
 
-Si `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` están definidos y no hay usuarios, se crea el primer admin.
+```bash
+java src/main/java/com/baseline/timetrack/setup/FirstRunSetup.java
+```
+
+En un servidor o contenedor no hace falta el asistente: define `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` y `JWT_SECRET` como variables de entorno (ver `.env.example`). Las variables de entorno tienen prioridad sobre `.env`.
+
+Flyway crea el esquema al iniciar (`src/main/resources/db/migration`) y la URL por defecto crea la base si no existe. **Si ya tenías una base `timetracker` creada por la versión anterior** (con `ddl-auto=update`), usa una base nueva o bórrala: el esquema cambió.
 
 Tests (usan H2 en memoria con las mismas migraciones, no necesitan MySQL):
 
